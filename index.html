@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rețeta Zilnică Personalizată</title>
+    <!-- Tailwind CSS CDN pentru stilizare -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Stiluri personalizate pentru fontul Inter și estetică generală */
+        body {
+            font-family: "Inter", sans-serif;
+            background-color: #f0fdf4; /* Fundal verde deschis */
+        }
+        .loading-spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-left: 4px solid #0D9488; /* Tailwind teal-600 */
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            vertical-align: middle;
+            margin-left: 8px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-4 bg-teal-50">
+    <div class="bg-white p-8 rounded-xl shadow-lg text-center max-w-md w-full">
+        
+        <div class="mb-8 p-4 border border-teal-200 rounded-lg bg-teal-100">
+            <h2 class="text-xl font-semibold text-teal-800 mb-4">Inspirația Culinară a Zilei</h2>
+            <p id="searchPromptText" class="text-gray-700 mb-4 font-semibold">
+                <!-- Aici va apărea sugestia de căutare a zilei -->
+            </p>
+            <div class="flex flex-col space-y-4 sm:flex-row sm:space-y-0 sm:space-x-4 justify-center">
+                <button id="googleSearchButton"
+                        class="bg-teal-600 hover:bg-teal-700 text-white font-semibold py-3 px-6 rounded-lg shadow-md transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-opacity-75 flex items-center justify-center">
+                    Caută Rețeta pe Google
+                    <span id="googleLoadingSpinner" class="loading-spinner hidden"></span>
+                </button>
+                <button id="youtubeSearchButton"
+                        class="bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-3 px-6 rounded-lg shadow-md transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-opacity-75 flex items-center justify-center">
+                    Caută Rețeta pe YouTube
+                    <span id="youtubeLoadingSpinner" class="loading-spinner hidden"></span>
+                </button>
+            </div>
+            <p id="errorMessage" class="text-red-600 mt-4 hidden">
+                A apărut o eroare. Te rog să încerci din nou!
+            </p>
+        </div>
+
+        <script>
+            // --- MESAJUL TĂU PERSONALIZAT DE DEDICAȚIE ---
+            
+            // Lista de 365 de cuvinte cheie unice pentru căutările Google și YouTube.
+            // Aceasta asigură o varietate zilnică pentru un an întreg.
+            const allDailySearchQueries = [
+                "rețete sănătoase românești de primăvară", // Ziua 1
+                "salată de ridichi și ceapă verde rețetă sănătoasă", // Ziua 2
+                "ciorbă de lobodă cu borș rețetă sănătoasă", // Ziua 3
+                "mâncare de urzici cu usturoi rețetă tradițională sănătoasă", // Ziua 4
+                "supă cremă de sparanghel rețetă ușoară", // Ziua 5
+                "rețete cu leurdă pentru detoxifiere", // Ziua 6
+                "salată de verdețuri asortate cu dressing ușor", // Ziua 7
+                "pui la cuptor cu legume de primăvară rețetă sănătoasă", // Ziua 8
+                "budincă de chia cu fructe de pădure de sezon", // Ziua 9
+                "smoothie verde cu spanac și măr", // Ziua 10
+                "ghiveci de legume proaspete de vară rețetă sănătoasă", // Ziua 11
+                "salată de roșii cu brânză de capră și busuioc", // Ziua 12
+                "pește la grătar cu legume mediteraneene", // Ziua 13
+                "gazpacho de roșii și ardei rețetă rapidă", // Ziua 14
+                "salată de castraveți cu iaurt și mărar", // Ziua 15
+                "dovlecei la grătar cu usturoi și pătrunjel", // Ziua 16
+                "vinete umplute cu legume de vară rețetă sănătoasă", // Ziua 17
+                "tartă cu fructe de pădure fără zahăr adăugat", // Ziua 18
+                "smoothie răcoritor cu pepene și mentă", // Ziua 19
+                "supă rece de roșii cu ardei copt", // Ziua 20
+                "rețete de toamnă cu dovleac copt sănătoase", // Ziua 21
+                "zacuscă de vinete și ardei copți rețetă tradițională", // Ziua 22
+                "supă cremă de ciuperci de pădure rețetă ușoară", // Ziua 23
+                "varză călită cu ciuperci de post rețetă sănătoasă", // Ziua 24
+                "tocană de legume de toamnă cu hribi", // Ziua 25
+                "salată de sfeclă roșie cu nuci și hrean", // Ziua 26
+                "mere coapte cu scorțișoară și miere", // Ziua 27
+                "compot de gutui fără zahăr", // Ziua 28
+                "rețete cu struguri de toamnă sănătoase", // Ziua 29
+                "mâncare de fasole uscată cu legume de toamnă", // Ziua 30
+                "rețete de iarnă sănătoase și reconfortante", // Ziua 31
+                "ciorbă de burtă falsă din ciuperci pleurotus", // Ziua 32
+                "salată de sfeclă roșie cu hrean și morcov", // Ziua 33
+                "tocană de cartofi cu legume rădăcinoase de iarnă", // Ziua 34
+                "supe cremă de brocoli și conopidă", // Ziua 35
+                "rețete cu citrice de iarnă pentru imunitate", // Ziua 36
+                "piure de păstârnac și țelină rețetă sănătoasă", // Ziua 37
+                "salată de varză murată cu boia și ulei", // Ziua 38
+                "compot de fructe uscate fără zahăr adăugat", // Ziua 39
+                "rețete cu linte roșie de iarnă", // Ziua 40
+                "orez cu legume asortate de iarnă", // Ziua 41
+                "chiftele de legume la cuptor rețetă sănătoasă", // Ziua 42
+                "supă de pui cu tăiței de casă sănătoasă", // Ziua 43
+                "sarmale de post cu orez și ciuperci", // Ziua 44
+                "mămăliguță cu brânză de capră și mărar", // Ziua 45
+                "salată de cartofi noi cu ceapă verde", // Ziua 46
+                "ardei umpluți cu orez și legume de post", // Ziua 47
+                "ciorbă de perișoare cu legume proaspete", // Ziua 48
+                "ghiveci de ciuperci cu mămăliguță", // Ziua 49
+                "dovlecei umpluți cu orez și carne slabă", // Ziua 50
+                "pilaf cu legume și carne de curcan", // Ziua 51
+                "tocană de pui cu ciuperci și smântână vegetală", // Ziua 52
+                "ruladă de spanac cu brânză de vaci", // Ziua 53
+                "clătite cu spanac și ciuperci", // Ziua 54
+                "mâncare de mazăre cu morcovi și mărar", // Ziua 55
+                "supă de roșii cu busuioc proaspăt", // Ziua 56
+                "salată de vinete cu roșii și ceapă", // Ziua 57
+                "ardei copți cu usturoi și pătrunjel", // Ziua 58
+                "fasole verde păstăi cu usturoi și roșii", // Ziua 59
+                "broccoli la aburi cu sos de lămâie", // Ziua 60
+                "conopidă la cuptor cu turmeric", // Ziua 61
+                "salată de quinoa cu legume asortate", // Ziua 62
+                "hummus de năut cu ardei copt", // Ziua 63
+                "pateu de linte cu nuci", // Ziua 64
+                "chifteluțe de ciuperci și orez", // Ziua 65
+                "terină de legume de toamnă", // Ziua 66
+                "supă de ceapă caramelizată sănătoasă", // Ziua 67
+                "piure de conopidă cu usturoi", // Ziua 68
+                "salată de varză roșie cu măr și morcov", // Ziua 69
+                "mâncare de cartofi dulci cu rozmarin", // Ziua 70
+                "tocană de ciuperci cu smântână vegetală", // Ziua 71
+                "sarmale în foi de viță cu orez și legume", // Ziua 72
+                "ciorbă de fasole cu afumătură slabă", // Ziua 73
+                "mâncare de mazăre cu ciuperci", // Ziua 74
+                "salată de bulgur cu legume proaspete", // Ziua 75
+                "quinoa cu legume la wok", // Ziua 76
+                "budincă de orez cu lapte vegetal și scorțișoară", // Ziua 77
+                "compot de fructe de pădure fără zahăr", // Ziua 78
+                "smoothie cu fructe tropicale și ghimbir", // Ziua 79
+                "salată de fructe de sezon cu mentă", // Ziua 80
+                "iaurt cu granola de casă și fructe proaspete", // Ziua 81
+                "omletă cu ciuperci și spanac", // Ziua 82
+                "ouă poșate cu avocado și roșii", // Ziua 83
+                "sandviș cu pâine integrală și pastă de năut", // Ziua 84
+                "wrap cu legume proaspete și hummus", // Ziua 85
+                "pizza cu blat din conopidă și legume", // Ziua 86
+                "burger vegetarian de ciuperci", // Ziua 87
+                "lipii integrale cu legume și sos tahini", // Ziua 88
+                "salată tabbouleh cu pătrunjel și roșii", // Ziua 89
+                "pilaf de hrișcă cu legume", // Ziua 90
+                "mâncare de năut cu curry și spanac", // Ziua 91
+                "supă de linte roșie cu turmeric", // Ziua 92
+                "chiftele de linte cu mărar", // Ziua 93
+                "tocană de ciuperci pleurotus", // Ziua 94
+                "salată de morcovi rași cu măr și lămâie", // Ziua 95
+                "piure de brocoli cu usturoi", // Ziua 96
+                "ciorbă de dovlecei cu smântână vegetală", // Ziua 97
+                "mâncare de cartofi noi cu mărar", // Ziua 98
+                "ardei umpluți cu ciuperci și orez", // Ziua 99
+                "sufleu de conopidă cu brânză slabă", // Ziua 100
+                "ruladă de pui cu legume și ierburi aromatice", // Ziua 101
+                "somon la cuptor cu sparanghel și lămâie", // Ziua 102
+                "cod la aburi cu legume asortate", // Ziua 103
+                "supă de pește cu legume și verdețuri", // Ziua 104
+                "salată de ton cu porumb și fasole verde", // Ziua 105
+                "creveți la grătar cu salată verde", // Ziua 106
+                "paella vegetariană cu orez brun", // Ziua 107
+                "paste integrale cu sos pesto de casă", // Ziua 108
+                "risotto cu ciuperci și parmezan vegetal", // Ziua 109
+                "lasagna vegetariană cu dovlecei", // Ziua 110
+                "cannelloni cu spanac și ricotta slabă", // Ziua 111
+                "clătite cu brânză de vaci și stafide fără zahăr", // Ziua 112
+                "gogoși de post cu gem de prune", // Ziua 113
+                "chec cu banane și nuci fără zahăr", // Ziua 114
+                "biscuiți integrali cu ovăz și stafide", // Ziua 115
+                "pâine de casă cu semințe integrale", // Ziua 116
+                "grisine cu semințe de susan și in", // Ziua 117
+                "chifle integrale cu măsline", // Ziua 118
+                "salată de quinoa cu avocado și roșii cherry", // Ziua 119
+                "supă rece de castraveți cu mentă", // Ziua 120
+                "mâncare de fasole verde cu roșii și usturoi", // Ziua 121
+                "broccoli la cuptor cu usturoi și parmezan", // Ziua 122
+                "conopidă gratinată cu brânză slabă", // Ziua 123
+                "cartofi dulci la cuptor cu scorțișoară", // Ziua 124
+                "gulii la aburi cu unt și mărar", // Ziua 125
+                "salată de varză albă cu morcov și ulei", // Ziua 126
+                "ciorbă de legume cu tăiței de casă", // Ziua 127
+                "mâncare de dovlecei cu smântână și mărar", // Ziua 128
+                "ardei umpluți cu carne de curcan și orez", // Ziua 129
+                "sufleu de brocoli cu brânză slabă", // Ziua 130
+                "ruladă de curcan cu spanac și morcov", // Ziua 131
+                "somon la tigaie cu sos de lămâie", // Ziua 132
+                "cod la cuptor cu ierburi aromatice", // Ziua 133
+                "supă de ciuperci cu smântână", // Ziua 134
+                "salată de ton cu porumb și maioneză ușoară", // Ziua 135
+                "creveți cu usturoi și pătrunjel", // Ziua 136
+                "paella cu fructe de mare și orez sălbatic", // Ziua 137
+                "paste integrale cu sos arrabiata", // Ziua 138
+                "risotto cu sparanghel și parmezan", // Ziua 139
+                "lasagna cu carne de pui și legume", // Ziua 140
+                "cannelloni cu carne de curcan și spanac", // Ziua 141
+                "clătite cu ciocolată neagră și banane", // Ziua 142
+                "gogoși cu mere și scorțișoară", // Ziua 143
+                "chec cu morcovi și nuci", // Ziua 144
+                "biscuiți cu ovăz și ciocolată neagră", // Ziua 145
+                "pâine cu maia și semințe", // Ziua 146
+                "grisine cu rozmarin și sare de mare", // Ziua 147
+                "chifle cu semințe de mac", // Ziua 148
+                "salată de linte cu legume proaspete", // Ziua 149
+                "supă cremă de morcovi cu ghimbir", // Ziua 150
+                "mâncare de năut cu legume rădăcinoase", // Ziua 151
+                "broccoli fiert cu usturoi și ulei de măsline", // Ziua 152
+                "conopidă la aburi cu sos de iaurt", // Ziua 153
+                "cartofi noi la cuptor cu rozmarin", // Ziua 154
+                "gulii umplute cu carne de pui și orez", // Ziua 155
+                "salată de varză murată cu ceapă roșie", // Ziua 156
+                "ciorbă de burtă (rețetă tradițională sănătoasă)", // Ziua 157
+                "mâncare de ciuperci cu smântână", // Ziua 158
+                "ardei umpluți cu carne de vită slabă", // Ziua 159
+                "sufleu de spanac cu brânză", // Ziua 160
+                "ruladă de carne de vită cu legume", // Ziua 161
+                "somon la tigaie cu sos de lămâie", // Ziua 162
+                "cod la cuptor cu ierburi aromatice", // Ziua 163
+                "supă de legume cu carne de pui", // Ziua 164
+                "salată de pui cu avocado și roșii", // Ziua 165
+                "creveți saganaki rețetă grecească", // Ziua 166
+                "paella cu pui și fructe de mare", // Ziua 167
+                "paste integrale cu sos bolognese sănătos", // Ziua 168
+                "risotto cu fructe de mare", // Ziua 169
+                "lasagna cu carne de vită și spanac", // Ziua 170
+                "cannelloni cu carne de vită și ricotta", // Ziua 171
+                "clătite cu gem de casă fără zahăr", // Ziua 172
+                "gogoși cu brânză de vaci și stafide", // Ziua 173
+                "chec cu lămâie și mac", // Ziua 174
+                "biscuiți cu unt de arahide și ovăz", // Ziua 175
+                "pâine fără gluten de casă", // Ziua 176
+                "grisine cu parmezan și oregano", // Ziua 177
+                "chifle cu cartofi dulci", // Ziua 178
+                "salată de quinoa cu pui la grătar", // Ziua 179
+                "supă cremă de brocoli cu crutoane", // Ziua 180
+                "mâncare de linte cu legume și curry", // Ziua 181
+                "broccoli la cuptor cu usturoi și ardei iute", // Ziua 182
+                "conopidă gratinată cu brânză slabă", // Ziua 183
+                "cartofi dulci umpluți cu fasole neagră", // Ziua 184
+                "gulii la cuptor cu sos de roșii", // Ziua 185
+                "salată de varză dulce cu mărar", // Ziua 186
+                "ciorbă de cartofi cu afumătură", // Ziua 187
+                "mâncare de ciuperci champignon", // Ziua 188
+                "ardei umpluți cu carne de porc slabă", // Ziua 189
+                "sufleu de morcovi cu brânză", // Ziua 190
+                "ruladă de carne de porc cu spanac", // Ziua 191
+                "somon afumat cu avocado și ou", // Ziua 192
+                "cod cu legume la pungă", // Ziua 193
+                "supă de ciuperci cu smântână", // Ziua 194
+                "salată de ton cu porumb și maioneză ușoară", // Ziua 195
+                "creveți cu usturoi și pătrunjel", // Ziua 196
+                "paella cu legume de sezon", // Ziua 197
+                "paste integrale cu sos de ciuperci", // Ziua 198
+                "risotto cu legume verzi", // Ziua 199
+                "lasagna cu legume și sos bechamel vegetal", // Ziua 200
+                "cannelloni cu ciuperci și spanac", // Ziua 201
+                "clătite cu miere și nuci", // Ziua 202
+                "gogoși cu iaurt și fructe", // Ziua 203
+                "chec cu fructe confiate și rom", // Ziua 204
+                "biscuiți cu fulgi de ciocolată și ovăz", // Ziua 205
+                "pâine cu semințe de in și floarea soarelui", // Ziua 206
+                "grisine cu semințe de chia", // Ziua 207
+                "chifle cu brânză și mărar", // Ziua 208
+                "salată de năut cu roșii și castraveți", // Ziua 209
+                "supă cremă de dovlecei cu mentă", // Ziua 210
+                "mâncare de fasole boabe cu ciolan slab", // Ziua 211
+                "broccoli fiert cu sos de usturoi", // Ziua 212
+                "conopidă la cuptor cu usturoi și ulei de măsline", // Ziua 213
+                "cartofi noi cu rozmarin și usturoi", // Ziua 214
+                "gulii umplute cu legume și orez", // Ziua 215
+                "salată de varză roșie cu dressing de iaurt", // Ziua 216
+                "ciorbă de pui a la grec", // Ziua 217
+                "mâncare de ciuperci cu mămăligă", // Ziua 218
+                "ardei umpluți cu carne de pui și legume", // Ziua 219
+                "sufleu de cartofi cu brânză", // Ziua 220
+                "ruladă de pui cu ciuperci și cașcaval", // Ziua 221
+                "somon la aburi cu sos de lămâie", // Ziua 222
+                "cod la grătar cu legume la aburi", // Ziua 223
+                "supă de legume cu tăiței", // Ziua 224
+                "salată de curcan cu ananas și țelină", // Ziua 225
+                "creveți cu sos de unt și usturoi", // Ziua 226
+                "paella cu pui și chorizo slab", // Ziua 227
+                "paste integrale cu sos de roșii și busuioc", // Ziua 228
+                "risotto cu dovleac și salvie", // Ziua 229
+                "lasagna cu carne tocată de curcan și legume", // Ziua 230
+                "cannelloni cu carne tocată de pui și ciuperci", // Ziua 231
+                "clătite cu dulceață de afine fără zahăr", // Ziua 232
+                "gogoși cu mere rase și scorțișoară", // Ziua 233
+                "chec cu portocale și nuci", // Ziua 234
+                "biscuiți cu fulgi de ovăz și miere", // Ziua 235
+                "pâine integrală cu semințe de dovleac", // Ziua 236
+                "grisine cu chimen și sare", // Ziua 237
+                "chifle cu ceapă verde", // Ziua 238
+                "salată de quinoa cu legume la grătar", // Ziua 239
+                "supă cremă de ciuperci champignon", // Ziua 240
+                "mâncare de linte cu legume rădăcinoase", // Ziua 241
+                "broccoli la aburi cu sos olandez ușor", // Ziua 242
+                "conopidă la cuptor cu sos de brânză slabă", // Ziua 243
+                "cartofi dulci la aburi cu scorțișoară", // Ziua 244
+                "gulii umplute cu carne de curcan și orez", // Ziua 245
+                "salată de varză albă cu mărar și oțet", // Ziua 246
+                "ciorbă de legume cu borș", // Ziua 247
+                "mâncare de ciuperci de pădure", // Ziua 248
+                "ardei umpluți cu carne de porc și orez", // Ziua 249
+                "sufleu de spanac cu ciuperci", // Ziua 250
+                "ruladă de carne de porc cu prune uscate", // Ziua 251
+                "somon la cuptor cu legume de sezon", // Ziua 252
+                "cod cu sos de lămâie și capere", // Ziua 253
+                "supă de pui cu găluște", // Ziua 254
+                "salată de ton cu fasole roșie", // Ziua 255
+                "creveți cu sos picant de roșii", // Ziua 256
+                "paella cu pui și legume", // Ziua 257
+                "paste integrale cu sos arrabiata picant", // Ziua 258
+                "risotto cu sparanghel și șofran", // Ziua 259
+                "lasagna cu legume de sezon și brânză", // Ziua 260
+                "cannelloni cu carne tocată de vită și spanac", // Ziua 261
+                "clătite cu ciocolată și fructe", // Ziua 262
+                "gogoși cu gem de caise", // Ziua 263
+                "chec cu nuci și stafide", // Ziua 264
+                "biscuiți cu fulgi de ovăz și stafide", // Ziua 265
+                "pâine cu măsline și rozmarin", // Ziua 266
+                "grisine cu usturoi și pătrunjel", // Ziua 267
+                "chifle cu semințe de in", // Ziua 268
+                "salată de năut cu măsline și ardei", // Ziua 269
+                "supă cremă de ciuperci de pădure", // Ziua 270
+                "mâncare de fasole verde cu usturoi", // Ziua 271
+                "broccoli la cuptor cu usturoi și parmezan vegetal", // Ziua 272
+                "conopidă pane la cuptor", // Ziua 273
+                "cartofi dulci la grătar", // Ziua 274
+                "gulii la aburi cu sos de unt și mărar", // Ziua 275
+                "salată de varză murată cu morcov", // Ziua 276
+                "ciorbă de burtă falsă (rețetă sănătoasă)", // Ziua 277
+                "mâncare de ciuperci cu smântână vegetală", // Ziua 278
+                "ardei umpluți cu carne de pui și orez brun", // Ziua 279
+                "sufleu de morcovi cu brânză slabă", // Ziua 280
+                "ruladă de curcan cu spanac", // Ziua 281
+                "somon la grătar cu sos de lămâie și ierburi", // Ziua 282
+                "cod la aburi cu legume de sezon", // Ziua 283
+                "supă de legume cu carne de curcan", // Ziua 284
+                "salată de pui cu ananas și țelină", // Ziua 285
+                "creveți cu sos de usturoi și unt", // Ziua 286
+                "paella vegetariană cu orez sălbatic", // Ziua 287
+                "paste integrale cu sos de roșii și ciuperci", // Ziua 288
+                "risotto cu legume de primăvară", // Ziua 289
+                "lasagna vegetariană cu dovlecei și vinete", // Ziua 290
+                "cannelloni cu spanac și ricotta", // Ziua 291
+                "clătite cu dulceață de vișine fără zahăr", // Ziua 292
+                "gogoși cu mere și scorțișoară la cuptor", // Ziua 293
+                "chec cu lămâie și mac", // Ziua 294
+                "biscuiți cu ovăz și ciocolată neagră", // Ziua 295
+                "pâine integrală cu semințe de floarea soarelui", // Ziua 296
+                "grisine cu rozmarin și sare de mare", // Ziua 297
+                "chifle cu măsline și oregano", // Ziua 298
+                "salată de quinoa cu legume de vară", // Ziua 299
+                "supă cremă de dovleac cu ghimbir", // Ziua 300
+                "mâncare de linte cu curry și lapte de cocos", // Ziua 301
+                "broccoli la aburi cu sos de iaurt și mentă", // Ziua 302
+                "conopidă la cuptor cu turmeric și chimen", // Ziua 303
+                "cartofi dulci la cuptor cu rozmarin", // Ziua 304
+                "gulii umplute cu carne de pui și legume", // Ziua 305
+                "salată de varză albă cu mărar și oțet de mere", // Ziua 306
+                "ciorbă de legume cu perișoare de pui", // Ziua 307
+                "mâncare de ciuperci cu usturoi și pătrunjel", // Ziua 308
+                "ardei umpluți cu carne de curcan și orez brun", // Ziua 309
+                "sufleu de spanac cu brânză de vaci", // Ziua 310
+                "ruladă de pui cu ciuperci și cașcaval slab", // Ziua 311
+                "somon la cuptor cu roșii cherry și busuioc", // Ziua 312
+                "cod la grătar cu sos de usturoi și lămâie", // Ziua 313
+                "supă de pui cu legume și tăiței", // Ziua 314
+                "salată de curcan cu struguri și nuci", // Ziua 315
+                "creveți cu sos de vin alb și usturoi", // Ziua 316
+                "paella cu pui și fructe de mare", // Ziua 317
+                "paste integrale cu sos bolognese de curcan", // Ziua 318
+                "risotto cu dovleac și salvie", // Ziua 319
+                "lasagna cu carne tocată de curcan și spanac", // Ziua 320
+                "cannelloni cu carne tocată de pui și ciuperci", // Ziua 321
+                "clătite cu miere și nuci", // Ziua 322
+                "gogoși cu iaurt și fructe de pădure", // Ziua 323
+                "chec cu fructe confiate și rom", // Ziua 324
+                "biscuiți cu fulgi de ovăz și ciocolată", // Ziua 325
+                "pâine cu maia și semințe mixte", // Ziua 326
+                "grisine cu chimen și sare de mare", // Ziua 327
+                "chifle cu ceapă caramelizată", // Ziua 328
+                "salată de năut cu roșii uscate și măsline", // Ziua 329
+                "supă cremă de ciuperci de pădure cu crutoane", // Ziua 330
+                "mâncare de fasole boabe cu ciolan afumat slab", // Ziua 331
+                "broccoli fiert cu sos de usturoi și iaurt", // Ziua 332
+                "conopidă la cuptor cu sos de brânză slabă", // Ziua 333
+                "cartofi noi cu rozmarin și usturoi la cuptor", // Ziua 334
+                "gulii umplute cu carne de curcan și orez brun", // Ziua 335
+                "salată de varză roșie cu măr și dressing de iaurt", // Ziua 336
+                "ciorbă de pui a la grec cu smântână vegetală", // Ziua 337
+                "mâncare de ciuperci cu mămăligă cremoasă", // Ziua 338
+                "ardei umpluți cu carne de pui și legume asortate", // Ziua 339
+                "sufleu de cartofi dulci cu scorțișoară", // Ziua 340
+                "ruladă de pui cu ciuperci și cașcaval", // Ziua 341
+                "somon la aburi cu sos de lămâie și capere", // Ziua 342
+                "cod la grătar cu legume la aburi și sos de unt", // Ziua 343
+                "supă de legume cu carne de vită slabă", // Ziua 344
+                "salată de ton cu fasole roșie și porumb", // Ziua 345
+                "creveți saganaki cu sos picant de roșii", // Ziua 346
+                "paella cu pui și legume de sezon", // Ziua 347
+                "paste integrale cu sos arrabiata picant", // Ziua 348
+                "risotto cu sparanghel și șofran", // Ziua 349
+                "lasagna cu legume de sezon și brânză slabă", // Ziua 350
+                "cannelloni cu carne tocată de vită și spanac", // Ziua 351
+                "clătite cu dulceață de afine fără zahăr", // Ziua 352
+                "gogoși cu mere rase și scorțișoară la cuptor", // Ziua 353
+                "chec cu lămâie și mac", // Ziua 354
+                "biscuiți cu ovăz și ciocolată neagră", // Ziua 355
+                "pâine integrală cu semințe de floarea soarelui", // Ziua 356
+                "grisine cu rozmarin și sare de mare", // Ziua 357
+                "chifle cu măsline și oregano", // Ziua 358
+                "salată de quinoa cu legume de vară", // Ziua 359
+                "supă cremă de dovleac cu ghimbir", // Ziua 360
+                "mâncare de linte cu curry și lapte de cocos", // Ziua 361
+                "broccoli la aburi cu sos de iaurt și mentă", // Ziua 362
+                "conopidă la cuptor cu turmeric și chimen", // Ziua 363
+                "cartofi dulci la cuptor cu rozmarin", // Ziua 364
+                "gulii umplute cu carne de pui și legume" // Ziua 365
+            ];
+
+            // Get the button and spinner elements
+            const googleSearchButton = document.getElementById('googleSearchButton');
+            const youtubeSearchButton = document.getElementById('youtubeSearchButton');
+            const googleLoadingSpinner = document.getElementById('googleLoadingSpinner');
+            const youtubeLoadingSpinner = document.getElementById('youtubeLoadingSpinner');
+            const errorMessage = document.getElementById('errorMessage');
+            const dedicationMessageElement = document.getElementById('dedicationMessage');
+
+            // Display the dedication message
+            dedicationMessageElement.textContent = dedicationText;
+
+            // Funcție pentru a obține ziua din an (0-364 sau 365 pentru an bisect)
+            function getDayOfYear() {
+                const now = new Date();
+                const start = new Date(now.getFullYear(), 0, 0); // 1 ianuarie, ora 00:00:00
+                const diff = now - start; // Diferența în milisecunde
+                const oneDay = 1000 * 60 * 60 * 24; // Un număr de milisecunde într-o zi
+                return Math.floor(diff / oneDay);
+            }
+
+            // Funcție pentru a selecta interogarea de căutare a zilei
+            function getDailySearchQuery() {
+                const dayOfYear = getDayOfYear();
+                // Folosește operatorul modulo pentru a cicla prin lista de interogări.
+                // Dacă lista are 365 de elemente, queryIndex va fi 0 pentru prima zi, 1 pentru a doua, etc.
+                const queryIndex = dayOfYear % allDailySearchQueries.length;
+                return allDailySearchQueries[queryIndex];
+            }
+
+            // Funcție pentru a gestiona căutarea (Google sau YouTube)
+            function performSearch(platform) {
+                const currentSearchQuery = getDailySearchQuery();
+                const encodedQuery = encodeURIComponent(currentSearchQuery);
+                let url = '';
+                let spinner = null;
+                let otherButton = null;
+
+                if (platform === 'google') {
+                    url = `https://www.google.com/search?q=${encodedQuery}&t=${new Date().getTime()}`;
+                    spinner = googleLoadingSpinner;
+                    otherButton = youtubeSearchButton;
+                } else if (platform === 'youtube') {
+                    url = `https://www.youtube.com/results?search_query=${encodedQuery}`;
+                    spinner = youtubeLoadingSpinner;
+                    otherButton = googleSearchButton;
+                }
+                // Disable buttons and show spinner
+                googleSearchButton.disabled = true;
+                youtubeSearchButton.disabled = true;
+                spinner.classList.remove('hidden');
+                errorMessage.classList.add('hidden');
+
+                try {
+                    window.open(url, '_blank');
+                } catch (error) {
+                    console.error('Eroare la redirecționare:', error);
+                    errorMessage.textContent = 'A apărut o eroare. Te rog să încerci din nou.';
+                    errorMessage.classList.remove('hidden');
+                } finally {
+                    // Re-enable buttons and hide spinner after a short delay
+                    setTimeout(() => {
+                        googleSearchButton.disabled = false;
+                        youtubeSearchButton.disabled = false;
+                        spinner.classList.add('hidden');
+                    }, 500);
+                }
+            }
+            // Afișează promptul de căutare și setează acțiunile butoanelor la încărcarea paginii
+            window.onload = () => {
+                const currentSearchQuery = getDailySearchQuery();
+                document.getElementById('searchPromptText').textContent = `Astăzi, îți propunem să cauți: "${currentSearchQuery}".`;
+                googleSearchButton.addEventListener('click', () => performSearch('google'));
+                youtubeSearchButton.addEventListener('click', () => performSearch('youtube'));
+            };
+        </script>
+    </div>
+</body>
+</html>
