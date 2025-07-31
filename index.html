@@ -31,11 +31,18 @@
 </head>
 <body class="flex items-center justify-center min-h-screen p-4 bg-teal-50">
     <div class="bg-white p-8 rounded-xl shadow-lg text-center max-w-md w-full">
-        
+        <h1 class="text-3xl font-bold text-teal-700 mb-4">Rețeta Zilnică Personalizată</h1>
+        <p class="text-gray-700 mb-8">
+            Descoperă o rețetă nouă în fiecare zi, inspirată de prospețimea ingredientelor de sezon!
+        </p>
+
         <div class="mb-8 p-4 border border-teal-200 rounded-lg bg-teal-100">
             <h2 class="text-xl font-semibold text-teal-800 mb-4">Inspirația Culinară a Zilei</h2>
             <p id="searchPromptText" class="text-gray-700 mb-4 font-semibold">
                 <!-- Aici va apărea sugestia de căutare a zilei -->
+            </p>
+            <p class="text-gray-600 mb-6">
+                Apasă unul dintre butoanele de mai jos pentru a căuta această rețetă pe Google sau YouTube.
             </p>
             <div class="flex flex-col space-y-4 sm:flex-row sm:space-y-0 sm:space-x-4 justify-center">
                 <button id="googleSearchButton"
@@ -55,8 +62,6 @@
         </div>
 
         <script>
-            // --- MESAJUL TĂU PERSONALIZAT DE DEDICAȚIE ---
-            
             // Lista de 365 de cuvinte cheie unice pentru căutările Google și YouTube.
             // Aceasta asigură o varietate zilnică pentru un an întreg.
             const allDailySearchQueries = [
@@ -434,9 +439,6 @@
             const youtubeLoadingSpinner = document.getElementById('youtubeLoadingSpinner');
             const errorMessage = document.getElementById('errorMessage');
             const dedicationMessageElement = document.getElementById('dedicationMessage');
-
-            // Display the dedication message
-            dedicationMessageElement.textContent = dedicationText;
 
             // Funcție pentru a obține ziua din an (0-364 sau 365 pentru an bisect)
             function getDayOfYear() {
